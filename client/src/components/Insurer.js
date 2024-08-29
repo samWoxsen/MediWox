@@ -55,24 +55,66 @@ const Insurer = ({mediChain, account, ethValue}) => {
         }
         setPatList(pt)
     }
+    // const getClaimsData = async () => {
+    //     var claimsIdList = await mediChain.methods.getInsurerClaims(account).call();
+    //     let cl = [];
+    //     for(let i=claimsIdList.length-1; i>=0; i--){
+    //         let claim = await mediChain.methods.claims(claimsIdList[i]).call();
+    //         let patient = await mediChain.methods.patientInfo(claim.patient).call();
+    //         let doctor = await mediChain.methods.doctorInfo(claim.doctor).call();
+    //         claim = {...claim, id: claimsIdList[i], patientEmail: patient.email, doctorEmail: doctor.email, policyName: claim.policyName}
+    //         cl = [...cl, claim];
+    //     }
+    //     setClaimsList(cl);
+    // }
+
     const getClaimsData = async () => {
-        var claimsIdList = await mediChain.methods.getInsurerClaims(account).call();
-        let cl = [];
-        for(let i=claimsIdList.length-1; i>=0; i--){
-            let claim = await mediChain.methods.claims(claimsIdList[i]).call();
-            let patient = await mediChain.methods.patientInfo(claim.patient).call();
-            let doctor = await mediChain.methods.doctorInfo(claim.doctor).call();
-            claim = {...claim, id: claimsIdList[i], patientEmail: patient.email, doctorEmail: doctor.email, policyName: claim.policyName}
-            cl = [...cl, claim];
+        try {
+            var claimsIdList = await mediChain.methods.getInsurerClaims(account).call();
+            let cl = [];
+            for (let i = claimsIdList.length - 1; i >= 0; i--) {
+                let claim = await mediChain.methods.claims(claimsIdList[i]).call();
+                let patient = await mediChain.methods.patientInfo(claim.patient).call();
+                let doctor = await mediChain.methods.doctorInfo(claim.doctor).call();
+                claim = { ...claim, id: claimsIdList[i], patientEmail: patient.email, doctorEmail: doctor.email, policyName: claim.policyName };
+                cl = [...cl, claim];
+            }
+            setClaimsList(cl);
+        } catch (error) {
+            console.error("Error fetching claims data:", error);
         }
-        setClaimsList(cl);
-    }
+    };
+
+    console.log("claimsList:", claimsList);
+
+    // const approveClaim = async (e, claim) => {
+    //     let value = claim.valueClaimed/ethValue;
+    //     mediChain.methods.approveClaimsByInsurer(claim.id).send({from: account, value: Web3.utils.toWei(value.toString(), 'Ether')}).on('transactionHash', (hash) => {
+    //         return window.location.href = '/login'
+    //     })
+    // }
+
     const approveClaim = async (e, claim) => {
-        let value = claim.valueClaimed/ethValue;
-        mediChain.methods.approveClaimsByInsurer(claim.id).send({from: account, value: Web3.utils.toWei(value.toString(), 'Ether')}).on('transactionHash', (hash) => {
-            return window.location.href = '/login'
-        })
-    }
+        e.preventDefault();
+        let value = claim.valueClaimed / ethValue;
+        try {
+            await mediChain.methods.approveClaimsByInsurer(claim.id).send({
+                from: account,
+                value: Web3.utils.toWei(value.toString(), 'Ether')
+            }).on('transactionHash', (hash) => {
+                console.log("Transaction hash:", hash);
+            });
+    
+            // Fetch updated claims data to reflect the changes in the UI
+            await getClaimsData();
+    
+            // Optionally, you can add a success message or redirect the user
+            console.log("Claim approved successfully");
+        } catch (error) {
+            console.error("Error approving claim:", error);
+        }
+    };
+
     const rejectClaim = async (e, claim) => {
         mediChain.methods.rejectClaimsByInsurer(claim.id).send({from: account}).on('transactionHash', (hash) => {
             return window.location.href = '/login'

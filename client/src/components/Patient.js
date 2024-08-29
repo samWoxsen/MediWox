@@ -91,15 +91,43 @@ const Patient = ({mediChain, account, ethValue}) => {
 
   const getTransactionsList = async () => {
     var transactionsIdList = await mediChain.methods.getPatientTransactions(account).call();
+
+    // console.log("Transactions ID list:", transactionsIdList);
+
     let tr = [];
     for(let i=transactionsIdList.length-1; i>=0; i--){
         let transaction = await mediChain.methods.transactions(transactionsIdList[i]).call();
+        console.log("Transaction:", transaction);
+
         let doctor = await mediChain.methods.doctorInfo(transaction.receiver).call();
+
+        console.log("Doctor:", doctor);
         transaction = {...transaction, id: transactionsIdList[i], doctorEmail: doctor.email}
         tr = [...tr, transaction];
     }
+
+    console.log("Transactions list:", tr);
+
     setTransactionsList(tr);
   }
+
+  // console.log("Transactions list123:", transactionsList);
+  // const getTransactionsList = async () => {
+  //   console.log("Fetching transactions...");
+  //   var transactionsIdList = await mediChain.methods.getPatientTransactions(account).call();
+  //   console.log("Transaction IDs:", transactionsIdList);
+  //   let tr = [];
+  //   for(let i=transactionsIdList.length-1; i>=0; i--){
+  //     let transaction = await mediChain.methods.transactions(transactionsIdList[i]).call();
+  //     console.log("Transaction details:", transaction);
+  //     let doctor = await mediChain.methods.doctorInfo(transaction.receiver).call();
+  //     transaction = {...transaction, id: transactionsIdList[i], doctorEmail: doctor.email}
+  //     tr = [...tr, transaction];
+  //   }
+  //   console.log("Processed transactions:", tr);
+  //   setTransactionsList(tr);
+  // }
+  
 
   const settlePayment = async (e, transaction) => {
     let value = transaction.value/ethValue;
@@ -128,6 +156,11 @@ const Patient = ({mediChain, account, ethValue}) => {
     if(buyFromInsurer && buyFromInsurer !== "Choose") getPolicyList();
     if(transactionsList.length === 0) getTransactionsList();
   }, [patient, docList, insurerList, buyFromInsurer, transactionsList])
+
+  // console.log("Current transactionsList:", transactionsList);
+  // console.log("Current patient:", docList);
+  // console.log("Current patient record:", patientRecord);
+  
 
   return (
     <div>
@@ -284,8 +317,8 @@ const Patient = ({mediChain, account, ethValue}) => {
                         <td>{transaction.date}</td>
                         <td>{transaction.disease}</td>
                         <td>INR {transaction.value}</td>
-                        <td>{transaction.paymentStatus === "0" ? 'Pending' : 'Paid'}</td>
-                        <td>{transaction.paymentStatus === "0" ? <Button variant="coolColor" onClick={(e) => settlePayment(e, transaction)}>Pay Now</Button> : 'Settled'}</td>
+                        <td>{!transaction?.settled ? 'Pending' : 'Paid'}</td>
+                        <td>{!transaction?.settled  ? <Button variant="coolColor" onClick={(e) => settlePayment(e, transaction)}>Pay Now</Button> : 'Settled'}</td>
                       </tr>
                     )
                   })
